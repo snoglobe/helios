@@ -26,6 +26,16 @@ interface PooledConnection {
   lastError?: string;
 }
 
+/** Max characters to buffer from a single command's stdout or stderr. */
+const MAX_EXEC_OUTPUT = 512 * 1024; // 512 KB
+
+function capOutput(str: string, max: number): string {
+  if (str.length <= max) return str;
+  const half = Math.floor(max / 2) - 40;
+  const omitted = str.length - max + 80;
+  return str.slice(0, half) + `\n\n... [${omitted} characters omitted] ...\n\n` + str.slice(-half);
+}
+
 export class ConnectionPool {
   private connections = new Map<string, PooledConnection>();
   private machines = new Map<string, RemoteMachine>();
@@ -146,18 +156,32 @@ export class ConnectionPool {
 
         let stdout = "";
         let stderr = "";
+        let stdoutCapped = false;
+        let stderrCapped = false;
 
         stream.on("data", (data: Buffer) => {
+          if (stdoutCapped) return;
           stdout += data.toString();
+          if (stdout.length > MAX_EXEC_OUTPUT) {
+            stdoutCapped = true;
+          }
         });
         stream.stderr.on("data", (data: Buffer) => {
+          if (stderrCapped) return;
           stderr += data.toString();
+          if (stderr.length > MAX_EXEC_OUTPUT) {
+            stderrCapped = true;
+          }
         });
         stream.on("error", (streamErr: Error) => {
           reject(streamErr);
         });
         stream.on("close", (code: number) => {
-          resolve({ stdout, stderr, exitCode: code ?? 0 });
+          resolve({
+            stdout: capOutput(stdout, MAX_EXEC_OUTPUT),
+            stderr: capOutput(stderr, MAX_EXEC_OUTPUT),
+            exitCode: code ?? 0,
+          });
         });
       });
     });
@@ -165,7 +189,7 @@ export class ConnectionPool {
 
   private execLocal(command: string, timeoutMs = 300_000): Promise<ExecResult> {
     return new Promise((resolve) => {
-      cpExec(command, { maxBuffer: 10 * 1024 * 1024, timeout: timeoutMs, shell: "/bin/bash" }, (err, stdout, stderr) => {
+      cpExec(command, { maxBuffer: MAX_EXEC_OUTPUT + 1024, timeout: timeoutMs, shell: "/bin/bash" }, (err, stdout, stderr) => {
         let exitCode = 0;
         if (err) {
           // err.code can be number (exit code), string (error code like ETIMEDOUT), or null (signal kill)
@@ -179,8 +203,8 @@ export class ConnectionPool {
           }
         }
         resolve({
-          stdout: stdout ?? "",
-          stderr: stderr ?? "",
+          stdout: capOutput(stdout ?? "", MAX_EXEC_OUTPUT),
+          stderr: capOutput(stderr ?? "", MAX_EXEC_OUTPUT),
           exitCode,
         });
       });
