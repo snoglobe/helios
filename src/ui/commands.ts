@@ -210,7 +210,10 @@ function cmdModel(args: string[], ctx: CommandContext): void {
   }
   addMessage("system", `Setting model to ${modelId}...`);
   orchestrator.setModel(modelId).then(
-    () => addMessage("system", `Model set to ${modelId}`),
+    () => {
+      savePreferences({ model: modelId });
+      addMessage("system", `Model set to ${modelId}`);
+    },
     (err) => addMessage("error", `Failed to set model: ${formatError(err)}`),
   );
 }
@@ -240,7 +243,10 @@ function cmdReasoning(args: string[], ctx: CommandContext): void {
     return;
   }
   orchestrator.setReasoningEffort(level as ReasoningEffort).then(
-    () => addMessage("system", `Reasoning effort set to ${level}`),
+    () => {
+      savePreferences({ reasoningEffort: level });
+      addMessage("system", `Reasoning effort set to ${level}`);
+    },
     (err) => addMessage("error", `Failed: ${formatError(err)}`),
   );
 }

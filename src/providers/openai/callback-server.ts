@@ -34,11 +34,11 @@ function getServerPort(server: Server): Promise<number> {
 /**
  * Local HTTP server for OAuth callback.
  * Listens on 127.0.0.1 for the redirect from the OAuth provider.
- * Uses port 0 to let the OS assign a free port, avoiding EADDRINUSE.
  */
 export async function startCallbackServer(
   expectedState: string,
   path: string,
+  port: number,
 ): Promise<CallbackServer> {
   const app = new Hono();
   let server: Server | null = null;
@@ -105,10 +105,9 @@ export async function startCallbackServer(
     }, 5 * 60 * 1000);
   });
 
-  // Port 0 = OS picks a free port; bind to 127.0.0.1 to avoid IPv6 issues
   server = serve({
     fetch: app.fetch,
-    port: 0,
+    port,
     hostname: "127.0.0.1",
   }) as unknown as Server;
 

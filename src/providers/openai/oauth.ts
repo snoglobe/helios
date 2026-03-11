@@ -7,6 +7,7 @@ import { shellQuote } from "../../ui/format.js";
 const CLIENT_ID = "app_EMoamEEZ73f0CkXaXp7hrann";
 const AUTH_URL = "https://auth.openai.com/oauth/authorize";
 const TOKEN_URL = "https://auth.openai.com/oauth/token";
+const CALLBACK_PORT = 1455; // Must match OpenAI's registered redirect URI
 const CALLBACK_PATH = "/auth/callback";
 
 /** Callback for displaying the auth URL — callers set this to route through the TUI. */
@@ -26,8 +27,8 @@ export class OpenAIOAuth {
     const { verifier, challenge } = generatePKCE();
     const state = randomBytes(32).toString("hex");
 
-    // Start callback server on an OS-assigned free port
-    const { port, result: codePromise } = await startCallbackServer(state, CALLBACK_PATH);
+    // Start callback server on the registered port (OpenAI only allows localhost:1455)
+    const { port, result: codePromise } = await startCallbackServer(state, CALLBACK_PATH, CALLBACK_PORT);
     const redirectUri = `http://localhost:${port}${CALLBACK_PATH}`;
 
     const authUrl = buildAuthUrl(challenge, state, redirectUri);

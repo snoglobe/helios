@@ -410,7 +410,9 @@ export async function createRuntime(options: RuntimeOptions = {}): Promise<Helio
   // Activate provider — await so it's ready before callers use the runtime
   try {
     await orch.switchProvider(initialProvider);
-    if (projectConfig?.model) await orch.setModel(projectConfig.model);
+    const model = projectConfig?.model ?? prefs.model;
+    if (model) await orch.setModel(model);
+    if (prefs.reasoningEffort) await orch.setReasoningEffort(prefs.reasoningEffort as any);
   } catch (err) {
     process.stderr.write(`[helios] Failed to authenticate ${initialProvider} provider: ${formatError(err)}\n`);
   }

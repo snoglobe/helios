@@ -8,6 +8,8 @@ const PREFS_FILE = join(CONFIG_DIR, "preferences.json");
 export interface Preferences {
   lastProvider?: "claude" | "openai";
   claudeAuthMode?: "cli" | "api";
+  model?: string;
+  reasoningEffort?: string;
 }
 
 function ensureDir(): void {
