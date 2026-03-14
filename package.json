@@ -1,6 +1,6 @@
 {
   "name": "@snoglobe/helios",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Autonomous ML research agent TUI",
   "type": "module",
   "main": "dist/cli/index.js",
